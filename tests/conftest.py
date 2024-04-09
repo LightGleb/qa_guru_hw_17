@@ -3,15 +3,14 @@ import pytest
 import requests
 from allure_commons._allure import step
 from allure_commons.types import AttachmentType
-from selene import browser, have
+from selene import browser
 
 LOGIN = "glebov@gmail.com"
 PASSWORD = "123456"
-URL = "https://demowebshop.tricentis.com/"
+URL = "https://demowebshop.tricentis.com"
 
 
-@pytest.fixture(scope='function', autouse=True)
-def login():
+def get_cookie():
     with step("Login with API"):
         result = requests.post(
             url=URL + "/login",
@@ -23,14 +22,16 @@ def login():
     with step("Get cookie from API"):
         cookie = result.cookies.get("NOPCOMMERCE.AUTH")
 
-    with step("Set cookie from API"):
-        browser.open(URL)
-        browser.driver.add_cookie({"name": "NOPCOMMERCE.AUTH", "value": cookie})
-        browser.open(URL)
+    return cookie
 
-    with step("Verify successful authorization"):
-        browser.element(".account").should(have.text(LOGIN))
 
-    yield
+@pytest.fixture(scope='function', autouse=True)
+def setup_browser():
+    browser.config.base_url = URL
+    browser.config.window_width = '1920'
+    browser.config.window_height = '1080'
+    browser.config.timeout = 6
+
+    yield browser
 
     browser.quit()
